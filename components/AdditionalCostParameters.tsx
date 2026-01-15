@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { TransactionInputs, AWSTransactionInputs } from '@/lib/costCalculator';
 
 interface AdditionalCostParametersProps {
@@ -20,8 +20,6 @@ export default function AdditionalCostParameters({
   activeProvider,
   onProviderChange,
 }: AdditionalCostParametersProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   const updateAzureField = <K extends keyof TransactionInputs>(
     field: K,
     value: TransactionInputs[K]
@@ -42,70 +40,50 @@ export default function AdditionalCostParameters({
     });
   };
 
-  const hasAnyAzureValue = Object.values(transactions).some(v => v && v > 0);
-  const hasAnyAWSValue = Object.values(awsTransactions).some(v => v && v > 0);
-  const hasAnyValue = hasAnyAzureValue || hasAnyAWSValue;
-
   return (
-    <div className="bg-white rounded-lg shadow-md mb-4">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-6 py-4 flex justify-between items-center hover:bg-gray-50 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-gray-800">Additional Cost Parameters</h2>
-          {hasAnyValue && (
-            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-              Active
-            </span>
-          )}
-        </div>
-        <svg
-          className={`w-5 h-5 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+    <div className="bg-white rounded-2xl shadow-xl border border-slate-200/60 p-5 h-full backdrop-blur-sm">
+      <h2 className="text-lg font-bold text-slate-900 mb-5 tracking-tight">Additional Cost Parameters</h2>
+
+      {/* Tabs */}
+      <div className="flex border-b-2 border-slate-200 mb-5 -mx-5 px-5">
+        <button
+          onClick={() => onProviderChange('azure')}
+          className={`px-4 py-2 font-bold text-xs transition-all relative ${
+            activeProvider === 'azure'
+              ? 'text-indigo-600'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {isExpanded && (
-        <div className="px-6 pb-6 border-t border-gray-200">
-          {/* Tabs */}
-          <div className="flex border-b border-gray-200 mb-4 mt-4">
-            <button
-              onClick={() => onProviderChange('azure')}
-              className={`px-4 py-2 font-medium text-sm transition-colors ${
-                activeProvider === 'azure'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              Azure Costs
-            </button>
-            <button
-              onClick={() => onProviderChange('aws')}
-              className={`px-4 py-2 font-medium text-sm transition-colors ${
-                activeProvider === 'aws'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              AWS S3 Costs
-            </button>
-          </div>
-
+          Azure Costs
           {activeProvider === 'azure' && (
-            <div>
-              <p className="text-sm text-gray-600 mb-4">
-                Enter transaction and usage data to calculate incremental costs (transactions, retrieval, query acceleration).
-                These costs will be added to the storage costs shown in the comparison cards.
-              </p>
+            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-t-full"></span>
+          )}
+        </button>
+        <button
+          onClick={() => onProviderChange('aws')}
+          className={`px-4 py-2 font-bold text-xs transition-all relative ${
+            activeProvider === 'aws'
+              ? 'text-indigo-600'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          AWS S3 Costs
+          {activeProvider === 'aws' && (
+            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-t-full"></span>
+          )}
+        </button>
+      </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {activeProvider === 'azure' && (
+        <div>
+          <p className="text-xs text-slate-600 mb-4 font-medium leading-relaxed">
+            Enter transaction and usage data to calculate incremental costs (transactions, retrieval, query acceleration).
+            These costs will be added to the storage costs shown in the comparison cards.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Monthly Read Volume (GB)
                   </label>
                   <input
@@ -114,12 +92,12 @@ export default function AdditionalCostParameters({
                     step="0.1"
                     value={transactions.monthlyReadGB || ''}
                     onChange={(e) => updateAzureField('monthlyReadGB', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Monthly Write Volume (GB)
                   </label>
                   <input
@@ -128,12 +106,12 @@ export default function AdditionalCostParameters({
                     step="0.1"
                     value={transactions.monthlyWriteGB || ''}
                     onChange={(e) => updateAzureField('monthlyWriteGB', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Read Operations (per 10,000)
                   </label>
                   <input
@@ -142,12 +120,12 @@ export default function AdditionalCostParameters({
                     step="1"
                     value={transactions.readOperations || ''}
                     onChange={(e) => updateAzureField('readOperations', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Write Operations (per 10,000)
                   </label>
                   <input
@@ -156,12 +134,12 @@ export default function AdditionalCostParameters({
                     step="1"
                     value={transactions.writeOperations || ''}
                     onChange={(e) => updateAzureField('writeOperations', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Query Acceleration - Data Scanned (GB)
                   </label>
                   <input
@@ -170,12 +148,12 @@ export default function AdditionalCostParameters({
                     step="0.1"
                     value={transactions.queryAccelerationScannedGB || ''}
                     onChange={(e) => updateAzureField('queryAccelerationScannedGB', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Query Acceleration - Data Returned (GB)
                   </label>
                   <input
@@ -184,12 +162,12 @@ export default function AdditionalCostParameters({
                     step="0.1"
                     value={transactions.queryAccelerationReturnedGB || ''}
                     onChange={(e) => updateAzureField('queryAccelerationReturnedGB', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Archive High Priority Read (per 10,000)
                   </label>
                   <input
@@ -198,12 +176,12 @@ export default function AdditionalCostParameters({
                     step="1"
                     value={transactions.archiveHighPriorityRead || ''}
                     onChange={(e) => updateAzureField('archiveHighPriorityRead', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Archive High Priority Retrieval (GB)
                   </label>
                   <input
@@ -212,12 +190,12 @@ export default function AdditionalCostParameters({
                     step="0.1"
                     value={transactions.archiveHighPriorityRetrievalGB || ''}
                     onChange={(e) => updateAzureField('archiveHighPriorityRetrievalGB', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Iterative Read Operations (per 10,000)
                   </label>
                   <input
@@ -226,12 +204,12 @@ export default function AdditionalCostParameters({
                     step="1"
                     value={transactions.iterativeReadOperations || ''}
                     onChange={(e) => updateAzureField('iterativeReadOperations', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Iterative Write Operations (per 100)
                   </label>
                   <input
@@ -240,12 +218,12 @@ export default function AdditionalCostParameters({
                     step="1"
                     value={transactions.iterativeWriteOperations || ''}
                     onChange={(e) => updateAzureField('iterativeWriteOperations', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Other Operations (per 10,000)
                   </label>
                   <input
@@ -254,22 +232,22 @@ export default function AdditionalCostParameters({
                     step="1"
                     value={transactions.otherOperations || ''}
                     onChange={(e) => updateAzureField('otherOperations', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
                 </div>
               </div>
             </div>
           )}
 
-          {activeProvider === 'aws' && (
-            <div>
-              <p className="text-sm text-gray-600 mb-4">
-                Enter AWS S3 request and retrieval data. Mapping: Hot → S3 Standard, Cold → S3 Standard-IA, Archive → S3 Glacier Flexible Retrieval.
-              </p>
+      {activeProvider === 'aws' && (
+        <div>
+          <p className="text-xs text-slate-600 mb-4 font-medium leading-relaxed">
+            Enter AWS S3 request and retrieval data. Mapping: Hot → S3 Standard, Cold → S3 Standard-IA, Archive → S3 Glacier Flexible Retrieval.
+          </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     PUT/COPY/POST/LIST Requests (per 1,000)
                   </label>
                   <input
@@ -278,12 +256,12 @@ export default function AdditionalCostParameters({
                     step="1"
                     value={awsTransactions.putCopyPostListRequests || ''}
                     onChange={(e) => updateAWSField('putCopyPostListRequests', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     GET/SELECT Requests (per 1,000)
                   </label>
                   <input
@@ -292,12 +270,12 @@ export default function AdditionalCostParameters({
                     step="1"
                     value={awsTransactions.getSelectRequests || ''}
                     onChange={(e) => updateAWSField('getSelectRequests', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Data Retrieval (GB)
                   </label>
                   <input
@@ -306,13 +284,13 @@ export default function AdditionalCostParameters({
                     step="0.1"
                     value={awsTransactions.dataRetrievalGB || ''}
                     onChange={(e) => updateAWSField('dataRetrievalGB', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Applies to Standard-IA and Glacier</p>
+                  <p className="text-[10px] text-slate-500 mt-1 font-medium">Applies to Standard-IA and Glacier</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Data Retrieval Requests (per 1,000)
                   </label>
                   <input
@@ -321,19 +299,19 @@ export default function AdditionalCostParameters({
                     step="1"
                     value={awsTransactions.dataRetrievalRequests || ''}
                     onChange={(e) => updateAWSField('dataRetrievalRequests', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
-                  <p className="text-xs text-gray-500 mt-1">For Glacier only</p>
+                  <p className="text-[10px] text-slate-500 mt-1 font-medium">For Glacier only</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Retrieval Type (Glacier)
                   </label>
                   <select
                     value={awsTransactions.retrievalType || 'standard'}
                     onChange={(e) => updateAWSField('retrievalType', e.target.value as 'standard' | 'expedited')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   >
                     <option value="standard">Standard</option>
                     <option value="expedited">Expedited</option>
@@ -341,7 +319,7 @@ export default function AdditionalCostParameters({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 tracking-wide">
                     Storage Duration (Days)
                   </label>
                   <input
@@ -350,13 +328,11 @@ export default function AdditionalCostParameters({
                     step="1"
                     value={awsTransactions.storageDurationDays || ''}
                     onChange={(e) => updateAWSField('storageDurationDays', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-slate-50/50 text-slate-900 text-sm font-medium"
                   />
-                  <p className="text-xs text-gray-500 mt-1">For early deletion penalty calculation</p>
+                  <p className="text-[10px] text-slate-500 mt-1 font-medium">For early deletion penalty calculation</p>
                 </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       )}
     </div>
