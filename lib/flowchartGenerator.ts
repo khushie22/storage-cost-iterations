@@ -1,7 +1,5 @@
-import { StorageComparisonResult, IncrementalCostBreakdown } from './costCalculator';
-import { TierAllocation, TransactionInputs, AWSTransactionInputs } from './types';
-import { getPricingConfig, getAWSPricingConfig } from './pricing';
-import { StorageType, ReplicationType, StorageTier } from './types';
+import { StorageComparisonResult, IncrementalCostBreakdown, TierAllocation, TransactionInputs, AWSTransactionInputs } from './costCalculator';
+import { getPricingConfig, getAWSPricingConfig, StorageType, ReplicationType, StorageTier } from './pricing';
 
 interface FlowchartData {
   storageResult: StorageComparisonResult;

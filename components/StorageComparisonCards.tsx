@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { StorageComparisonResult, IncrementalCostBreakdown } from '@/lib/costCalculator';
-import { TierAllocation, TransactionInputs, AWSTransactionInputs } from '@/lib/types';
+import { StorageComparisonResult, IncrementalCostBreakdown, TierAllocation, TransactionInputs, AWSTransactionInputs } from '@/lib/costCalculator';
 import { generateFlowchartWithValues } from '@/lib/flowchartGenerator';
 import FlowchartModal from './FlowchartModal';
 
