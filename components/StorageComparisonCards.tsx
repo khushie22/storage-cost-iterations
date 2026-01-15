@@ -195,7 +195,7 @@ export default function StorageComparisonCards({
           const hasIncremental = incremental && incremental.total > 0;
           
           const hasResult = card.result !== undefined;
-          const storageCost = hasResult ? card.result.totalForAllDatabases * multiplier : 0;
+          const storageCost = hasResult ? (card.result?.totalForAllDatabases || 0) * multiplier : 0;
           const totalCost = storageCost + (incremental?.total || 0) * multiplier;
           const showNA = !hasData || !hasResult;
 
@@ -330,7 +330,7 @@ export default function StorageComparisonCards({
               const hasIncremental = incremental && incremental.total > 0;
               
               const hasResult = card.result !== undefined;
-              const storageCost = hasResult ? card.result.totalForAllDatabases * multiplier : 0;
+              const storageCost = hasResult ? (card.result?.totalForAllDatabases || 0) * multiplier : 0;
               const totalCost = storageCost + (incremental?.total || 0) * multiplier;
               const showNA = !hasData || !hasResult;
 
