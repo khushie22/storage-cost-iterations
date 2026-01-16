@@ -450,18 +450,18 @@ function generateAWSIncrementalFlowchart(
     // Retrieval costs
     if ((awsTransactions.dataRetrievalGB || 0) > 0) {
       if (tier === 'cold' && tierPricing.dataRetrieval?.standard) {
-        tierCosts[tier].retrievalCost = awsTransactions.dataRetrievalGB * tierPricing.dataRetrieval.standard;
+        tierCosts[tier].retrievalCost = (awsTransactions.dataRetrievalGB || 0) * tierPricing.dataRetrieval.standard;
       } else if (tier === 'archive' && tierPricing.dataRetrieval) {
         const retrievalType = awsTransactions.retrievalType || 'standard';
         const retrievalPrice = tierPricing.dataRetrieval[retrievalType];
         if (retrievalPrice) {
-          tierCosts[tier].retrievalCost = awsTransactions.dataRetrievalGB * retrievalPrice;
+          tierCosts[tier].retrievalCost = (awsTransactions.dataRetrievalGB || 0) * retrievalPrice;
         }
         // Add retrieval request cost for Glacier
         if ((awsTransactions.dataRetrievalRequests || 0) > 0 && tierPricing.dataRetrievalRequests) {
           const requestPrice = tierPricing.dataRetrievalRequests[retrievalType];
           if (requestPrice) {
-            tierCosts[tier].retrievalCost += (awsTransactions.dataRetrievalRequests / 1000) * requestPrice;
+            tierCosts[tier].retrievalCost += ((awsTransactions.dataRetrievalRequests || 0) / 1000) * requestPrice;
           }
         }
       }
