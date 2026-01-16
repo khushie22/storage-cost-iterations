@@ -182,16 +182,16 @@ function generateAzureIncrementalFlowchart(
       tierCosts[tier].readCost = (transactions.readOperations / 10000) * tierPricing.readOperations;
     }
     if ((transactions.iterativeReadOperations || 0) > 0 && tierPricing.iterativeReadOperations) {
-      tierCosts[tier].iterReadCost = (transactions.iterativeReadOperations / 10000) * tierPricing.iterativeReadOperations;
+      tierCosts[tier].iterReadCost = ((transactions.iterativeReadOperations || 0) / 10000) * tierPricing.iterativeReadOperations;
     }
     if ((transactions.iterativeWriteOperations || 0) > 0 && tierPricing.iterativeWriteOperations) {
-      tierCosts[tier].iterWriteCost = (transactions.iterativeWriteOperations / 100) * tierPricing.iterativeWriteOperations;
+      tierCosts[tier].iterWriteCost = ((transactions.iterativeWriteOperations || 0) / 100) * tierPricing.iterativeWriteOperations;
     }
     if ((transactions.otherOperations || 0) > 0 && tierPricing.otherOperations) {
-      tierCosts[tier].otherCost = (transactions.otherOperations / 10000) * tierPricing.otherOperations;
+      tierCosts[tier].otherCost = ((transactions.otherOperations || 0) / 10000) * tierPricing.otherOperations;
     }
     if (tier === 'archive' && (transactions.archiveHighPriorityRead || 0) > 0 && tierPricing.archiveHighPriorityRead) {
-      tierCosts[tier].archiveReadCost = (transactions.archiveHighPriorityRead / 10000) * tierPricing.archiveHighPriorityRead;
+      tierCosts[tier].archiveReadCost = ((transactions.archiveHighPriorityRead || 0) / 10000) * tierPricing.archiveHighPriorityRead;
     }
     tierCosts[tier].transactionTotal = tierCosts[tier].writeCost + tierCosts[tier].readCost + tierCosts[tier].iterReadCost + tierCosts[tier].iterWriteCost + tierCosts[tier].otherCost + tierCosts[tier].archiveReadCost;
     
@@ -201,9 +201,9 @@ function generateAzureIncrementalFlowchart(
     }
     if (tier === 'archive' && (transactions.archiveHighPriorityRetrievalGB || 0) > 0) {
       if (tierPricing.archiveHighPriorityRetrieval) {
-        tierCosts[tier].retrievalCost = transactions.archiveHighPriorityRetrievalGB * tierPricing.archiveHighPriorityRetrieval;
+        tierCosts[tier].retrievalCost = (transactions.archiveHighPriorityRetrievalGB || 0) * tierPricing.archiveHighPriorityRetrieval;
       } else if (tierPricing.dataRetrieval) {
-        tierCosts[tier].retrievalCost = transactions.archiveHighPriorityRetrievalGB * tierPricing.dataRetrieval;
+        tierCosts[tier].retrievalCost = (transactions.archiveHighPriorityRetrievalGB || 0) * tierPricing.dataRetrieval;
       }
     }
     
