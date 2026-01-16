@@ -242,7 +242,7 @@ function generateAzureIncrementalFlowchart(
   
   // Hot Tier
   const hotNodes: string[] = [];
-  let hotCurrent = 'IncTierLoop';
+  let hotCurrent: string | null = 'IncTierLoop';
   
   if (tierCosts.hot.writeCost > 0) {
     hotNodes.push(`    ${hotCurrent} --> CalcWriteHot["Hot Tier - Write Cost<br/>Ops: ${formatNumber(transactions.writeOperations)}<br/>Price: ${config.tiers.hot.writeOperations} per 10k<br/>Cost: ${formatCurrency(tierCosts.hot.writeCost)}<br/>Formula: ops / 10,000 × price"]`);
@@ -292,7 +292,7 @@ function generateAzureIncrementalFlowchart(
   
   // Cold Tier
   const coldNodes: string[] = [];
-  let coldCurrent = hotCurrent || 'IncTierLoop';
+  let coldCurrent: string | null = hotCurrent || 'IncTierLoop';
   
   if (tierCosts.cold.writeCost > 0) {
     coldNodes.push(`    ${coldCurrent} --> CalcWriteCold["Cold Tier - Write Cost<br/>Ops: ${formatNumber(transactions.writeOperations)}<br/>Price: ${config.tiers.cold.writeOperations} per 10k<br/>Cost: ${formatCurrency(tierCosts.cold.writeCost)}"]`);
@@ -339,7 +339,7 @@ function generateAzureIncrementalFlowchart(
   
   // Archive Tier
   const archiveNodes: string[] = [];
-  let archiveCurrent = coldCurrent || hotCurrent || 'IncTierLoop';
+  let archiveCurrent: string | null = coldCurrent || hotCurrent || 'IncTierLoop';
   
   if (tierCosts.archive.writeCost > 0) {
     archiveNodes.push(`    ${archiveCurrent} --> CalcWriteArchive["Archive Tier - Write Cost<br/>Ops: ${formatNumber(transactions.writeOperations)}<br/>Price: ${config.tiers.archive.writeOperations} per 10k<br/>Cost: ${formatCurrency(tierCosts.archive.writeCost)}"]`);
@@ -485,7 +485,7 @@ function generateAWSIncrementalFlowchart(
 
   // Build nodes conditionally
   const hotNodes: string[] = [];
-  let hotCurrent = 'IncTierLoop';
+  let hotCurrent: string | null = 'IncTierLoop';
   
   if (tierCosts.hot.putCost > 0) {
     hotNodes.push(`    ${hotCurrent} --> CalcPutHot["Hot Tier - PUT/COPY/POST/LIST Cost<br/>Requests: ${formatNumber(awsTransactions.putCopyPostListRequests || 0)}<br/>Price: ${config.tiers.hot.putCopyPostListRequests} per 1k<br/>Cost: ${formatCurrency(tierCosts.hot.putCost)}<br/>Formula: requests / 1,000 × price"]`);
@@ -504,7 +504,7 @@ function generateAWSIncrementalFlowchart(
   }
   
   const coldNodes: string[] = [];
-  let coldCurrent = hotCurrent || 'IncTierLoop';
+  let coldCurrent: string | null = hotCurrent || 'IncTierLoop';
   
   if (tierCosts.cold.putCost > 0) {
     coldNodes.push(`    ${coldCurrent} --> CalcPutCold["Cold Tier - PUT/COPY/POST/LIST Cost<br/>Requests: ${formatNumber(awsTransactions.putCopyPostListRequests || 0)}<br/>Price: ${config.tiers.cold.putCopyPostListRequests} per 1k<br/>Cost: ${formatCurrency(tierCosts.cold.putCost)}"]`);
@@ -533,7 +533,7 @@ function generateAWSIncrementalFlowchart(
   }
   
   const archiveNodes: string[] = [];
-  let archiveCurrent = coldCurrent || hotCurrent || 'IncTierLoop';
+  let archiveCurrent: string | null = coldCurrent || hotCurrent || 'IncTierLoop';
   
   if (tierCosts.archive.putCost > 0) {
     archiveNodes.push(`    ${archiveCurrent} --> CalcPutArchive["Archive Tier - PUT/COPY/POST/LIST Cost<br/>Requests: ${formatNumber(awsTransactions.putCopyPostListRequests || 0)}<br/>Price: ${config.tiers.archive.putCopyPostListRequests} per 1k<br/>Cost: ${formatCurrency(tierCosts.archive.putCost)}"]`);
