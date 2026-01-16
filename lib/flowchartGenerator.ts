@@ -210,10 +210,10 @@ function generateAzureIncrementalFlowchart(
     // Query acceleration (only for hot/cold)
     if (tier !== 'archive') {
       if ((transactions.queryAccelerationScannedGB || 0) > 0 && tierPricing.queryAccelerationScanned) {
-        tierCosts[tier].scannedCost = transactions.queryAccelerationScannedGB * tierPricing.queryAccelerationScanned;
+        tierCosts[tier].scannedCost = (transactions.queryAccelerationScannedGB || 0) * tierPricing.queryAccelerationScanned;
       }
       if ((transactions.queryAccelerationReturnedGB || 0) > 0 && tierPricing.queryAccelerationReturned) {
-        tierCosts[tier].returnedCost = transactions.queryAccelerationReturnedGB * tierPricing.queryAccelerationReturned;
+        tierCosts[tier].returnedCost = (transactions.queryAccelerationReturnedGB || 0) * tierPricing.queryAccelerationReturned;
       }
       tierCosts[tier].queryTotal = tierCosts[tier].scannedCost + tierCosts[tier].returnedCost;
     }
