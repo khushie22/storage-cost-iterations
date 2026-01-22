@@ -164,41 +164,62 @@ export default function FlowchartModal({
       canvas.width = svgWidth;
       canvas.height = svgHeight;
 
-      // Create image from SVG
+      // Create image from SVG using data URL to avoid CORS issues
       const svgData = new XMLSerializer().serializeToString(clonedSvg);
-      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(svgBlob);
+      const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
 
       const img = new Image();
       
       img.onload = () => {
-        // Draw image on canvas
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
+        try {
+          // Draw image on canvas
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
 
-        // Convert to PNG and download
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const downloadUrl = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = `${title.replace(/\s+/g, '-')}-flowchart.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(downloadUrl);
-          }
-          URL.revokeObjectURL(url);
-        }, 'image/png');
+          // Convert to PNG and download
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const downloadUrl = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = downloadUrl;
+              link.download = `${title.replace(/\s+/g, '-')}-flowchart.png`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(downloadUrl);
+            }
+          }, 'image/png');
+        } catch (error) {
+          console.error('Error drawing image to canvas:', error);
+          // Fallback: try to download SVG directly
+          const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+          const svgUrl = URL.createObjectURL(svgBlob);
+          const link = document.createElement('a');
+          link.href = svgUrl;
+          link.download = `${title.replace(/\s+/g, '-')}-flowchart.svg`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(svgUrl);
+        }
       };
 
       img.onerror = () => {
         console.error('Error loading SVG image');
-        URL.revokeObjectURL(url);
+        // Fallback: try to download SVG directly
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+        const link = document.createElement('a');
+        link.href = svgUrl;
+        link.download = `${title.replace(/\s+/g, '-')}-flowchart.svg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(svgUrl);
       };
 
-      img.src = url;
+      img.src = svgDataUrl;
     } catch (error) {
       console.error('Error downloading PNG:', error);
     }

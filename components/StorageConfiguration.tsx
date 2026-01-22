@@ -122,11 +122,17 @@ export default function StorageConfiguration({
 
       <div className="mb-4">
         <h3 className="text-xs font-bold text-slate-800 mb-3 tracking-wide uppercase">Tier Allocation</h3>
-        {(['hot', 'cold', 'archive'] as const).map((tier) => (
+        {(['hot', 'cold', 'archive'] as const).map((tier) => {
+          const awsLabels: Record<typeof tier, string> = {
+            hot: 'S3 Standard',
+            cold: 'S3 Standard-IA',
+            archive: 'S3 Glacier Flexible Retrieval',
+          };
+          return (
           <div key={tier} className="mb-3 border border-slate-200 rounded-lg p-3 bg-gradient-to-br from-slate-50 to-white">
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-bold text-slate-700 capitalize tracking-wide">
-                {tier}
+                {tier} <span className="text-slate-500 font-normal">/ {awsLabels[tier]}</span>
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -164,7 +170,8 @@ export default function StorageConfiguration({
               }}
             />
           </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="pt-4 border-t border-slate-200">

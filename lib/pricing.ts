@@ -28,6 +28,8 @@ export interface TierPricing {
   queryAccelerationScanned?: number; // per GB
   queryAccelerationReturned?: number; // per GB
   index?: number; // per GB/month
+  minimumStorageDurationDays?: number; // for early deletion penalty (Azure: Archive=180, Cold=90, Cool=30)
+  earlyDeletionPenalty?: number; // per GB (calculated based on remaining days, typically same as storage price)
 }
 
 export interface StorageConfig {
@@ -54,9 +56,9 @@ export const PRICING_CONFIG: Record<`${StorageType}-${ReplicationType}`, Storage
     tiers: {
       hot: {
         storage: [
-          { range: { min: 0, max: 51200 }, pricePerGB: 0.019 },
-          { range: { min: 51200, max: 512000 }, pricePerGB: 0.018 },
-          { range: { min: 512000, max: null }, pricePerGB: 0.017 },
+          { range: { min: 0, max: 51200 }, pricePerGB: 0.021 },
+          { range: { min: 51200, max: 512000 }, pricePerGB: 0.020 },
+          { range: { min: 512000, max: null }, pricePerGB: 0.020 },
         ],
         writeOperations: 0.065,
         readOperations: 0.0052,
@@ -65,39 +67,43 @@ export const PRICING_CONFIG: Record<`${StorageType}-${ReplicationType}`, Storage
         otherOperations: 0.0052,
         dataRetrieval: 0,
         dataWrite: 0,
-        queryAccelerationScanned: 0.00226,
-        queryAccelerationReturned: 0.00080,
-        index: 0.0263,
+        queryAccelerationScanned: 0.002,
+        queryAccelerationReturned: 0.0007,
+        index: 0.0297,
       },
       cold: {
         storage: [
-          { range: { min: 0, max: null }, pricePerGB: 0.00443 },
+          { range: { min: 0, max: null }, pricePerGB: 0.0036 },
         ],
-        writeOperations: 0.288,
-        readOperations: 0.16,
+        writeOperations: 0.234,
+        readOperations: 0.13,
         iterativeWriteOperations: 0.065,
-        dataRetrieval: 0.0369,
+        dataRetrieval: 0.03,
         dataWrite: 0,
-        queryAccelerationScanned: 0.00246,
-        queryAccelerationReturned: 0.0123,
-        index: 0.0263,
+        queryAccelerationScanned: 0.002,
+        queryAccelerationReturned: 0.01,
+        index: 0.0297,
+        minimumStorageDurationDays: 90,
+        earlyDeletionPenalty: 0.0036, // Same as storage price per GB
       },
       archive: {
         storage: [
-          { range: { min: 0, max: null }, pricePerGB: 0.002 },
+          { range: { min: 0, max: null }, pricePerGB: 0.001 },
         ],
         writeOperations: 0.13,
         readOperations: 6.50,
-        archiveHighPriorityRead: 79.95,
+        archiveHighPriorityRead: 65.00,
         iterativeWriteOperations: 0.065,
         dataRetrieval: 0.02,
-        archiveHighPriorityRetrieval: 0.123,
+        archiveHighPriorityRetrieval: 0.10,
         dataWrite: 0,
+        minimumStorageDurationDays: 180,
+        earlyDeletionPenalty: 0.001, // Same as storage price per GB
       },
     },
     reservedCapacity: {
-      '100TB': 1545,
-      '1PB': 15050,
+      '100TB': 1747,
+      '1PB': 17013,
     },
   },
   'data-lake-GRS': {
@@ -106,9 +112,9 @@ export const PRICING_CONFIG: Record<`${StorageType}-${ReplicationType}`, Storage
     tiers: {
       hot: {
         storage: [
-          { range: { min: 0, max: 51200 }, pricePerGB: 0.037 },
-          { range: { min: 51200, max: 512000 }, pricePerGB: 0.036 },
-          { range: { min: 512000, max: null }, pricePerGB: 0.034 },
+          { range: { min: 0, max: 51200 }, pricePerGB: 0.046 },
+          { range: { min: 51200, max: 512000 }, pricePerGB: 0.044 },
+          { range: { min: 512000, max: null }, pricePerGB: 0.043 },
         ],
         writeOperations: 0.13,
         readOperations: 0.0052,
@@ -117,39 +123,43 @@ export const PRICING_CONFIG: Record<`${StorageType}-${ReplicationType}`, Storage
         otherOperations: 0.0052,
         dataRetrieval: 0,
         dataWrite: 0,
-        queryAccelerationScanned: 0.00226,
-        queryAccelerationReturned: 0.00080,
-        index: 0.0526,
+        queryAccelerationScanned: 0.002,
+        queryAccelerationReturned: 0.0007,
+        index: 0.0655,
       },
       cold: {
         storage: [
-          { range: { min: 0, max: null }, pricePerGB: 0.00803 },
+          { range: { min: 0, max: null }, pricePerGB: 0.0081 },
         ],
-        writeOperations: 0.522,
-        readOperations: 0.16,
+        writeOperations: 0.468,
+        readOperations: 0.13,
         iterativeWriteOperations: 0.13,
-        dataRetrieval: 0.0369,
+        dataRetrieval: 0.01,
         dataWrite: 0,
-        queryAccelerationScanned: 0.00246,
-        queryAccelerationReturned: 0.0123,
-        index: 0.0526,
+        queryAccelerationScanned: 0.002,
+        queryAccelerationReturned: 0.01,
+        index: 0.0655,
+        minimumStorageDurationDays: 90,
+        earlyDeletionPenalty: 0.0081, // Same as storage price per GB
       },
       archive: {
         storage: [
-          { range: { min: 0, max: null }, pricePerGB: 0.004 },
+          { range: { min: 0, max: null }, pricePerGB: 0.003 },
         ],
-        writeOperations: 0.26,
+        writeOperations: 0.273,
         readOperations: 6.50,
-        archiveHighPriorityRead: 79.95,
+        archiveHighPriorityRead: 65.00,
         iterativeWriteOperations: 0.13,
         dataRetrieval: 0.02,
-        archiveHighPriorityRetrieval: 0.123,
+        archiveHighPriorityRetrieval: 0.10,
         dataWrite: 0,
+        minimumStorageDurationDays: 180,
+        earlyDeletionPenalty: 0.003, // Same as storage price per GB
       },
     },
     reservedCapacity: {
-      '100TB': 3090,
-      '1PB': 30099,
+      '100TB': 3846,
+      '1PB': 37460,
     },
   },
   'blob-LRS': {
@@ -158,9 +168,9 @@ export const PRICING_CONFIG: Record<`${StorageType}-${ReplicationType}`, Storage
     tiers: {
       hot: {
         storage: [
-          { range: { min: 0, max: 51200 }, pricePerGB: 0.018 },
-          { range: { min: 51200, max: 512000 }, pricePerGB: 0.0173 },
-          { range: { min: 512000, max: null }, pricePerGB: 0.0166 },
+          { range: { min: 0, max: 51200 }, pricePerGB: 0.021 },
+          { range: { min: 51200, max: 512000 }, pricePerGB: 0.02 },
+          { range: { min: 512000, max: null }, pricePerGB: 0.0191 },
         ],
         writeOperations: 0.065,
         readOperations: 0.005,
@@ -172,34 +182,42 @@ export const PRICING_CONFIG: Record<`${StorageType}-${ReplicationType}`, Storage
       },
       cold: {
         storage: [
-          { range: { min: 0, max: null }, pricePerGB: 0.00443 },
+          { range: { min: 0, max: 51200 }, pricePerGB: 0.0036 },
+          { range: { min: 51200, max: 512000 }, pricePerGB: 0.0036 },
+          { range: { min: 512000, max: null }, pricePerGB: 0.0036 },
         ],
-        writeOperations: 0.288,
-        readOperations: 0.16,
+        writeOperations: 0.234,
+        readOperations: 0.13,
         iterativeReadOperations: 0.0052,
         iterativeWriteOperations: 0.065,
         otherOperations: 0.005,
-        dataRetrieval: 0.0369,
+        dataRetrieval: 0.03,
         dataWrite: 0,
+        minimumStorageDurationDays: 90,
+        earlyDeletionPenalty: 0.0036, // Same as storage price per GB
       },
       archive: {
         storage: [
-          { range: { min: 0, max: null }, pricePerGB: 0.002 },
+          { range: { min: 0, max: 51200 }, pricePerGB: 0.00099 },
+          { range: { min: 51200, max: 512000 }, pricePerGB: 0.00099 },
+          { range: { min: 512000, max: null }, pricePerGB: 0.00099 },
         ],
         writeOperations: 0.13,
         readOperations: 6.50,
-        archiveHighPriorityRead: 79.95,
+        archiveHighPriorityRead: 65.00,
         iterativeReadOperations: 0.0052,
         iterativeWriteOperations: 0.065,
         otherOperations: 0.005,
         dataRetrieval: 0.02,
-        archiveHighPriorityRetrieval: 0.123,
+        archiveHighPriorityRetrieval: 0.10,
         dataWrite: 0,
+        minimumStorageDurationDays: 180,
+        earlyDeletionPenalty: 0.00099, // Same as storage price per GB
       },
     },
     reservedCapacity: {
-      '100TB': 1545,
-      '1PB': 15050,
+      '100TB': 1747,
+      '1PB': 17013,
     },
   },
   'blob-GRS': {
@@ -208,9 +226,9 @@ export const PRICING_CONFIG: Record<`${StorageType}-${ReplicationType}`, Storage
     tiers: {
       hot: {
         storage: [
-          { range: { min: 0, max: 51200 }, pricePerGB: 0.037 },
-          { range: { min: 51200, max: 512000 }, pricePerGB: 0.0353 },
-          { range: { min: 512000, max: null }, pricePerGB: 0.0339 },
+          { range: { min: 0, max: 51200 }, pricePerGB: 0.046 },
+          { range: { min: 51200, max: 512000 }, pricePerGB: 0.044 },
+          { range: { min: 512000, max: null }, pricePerGB: 0.0421 },
         ],
         writeOperations: 0.13,
         readOperations: 0.005,
@@ -222,34 +240,42 @@ export const PRICING_CONFIG: Record<`${StorageType}-${ReplicationType}`, Storage
       },
       cold: {
         storage: [
-          { range: { min: 0, max: null }, pricePerGB: 0.00803 },
+          { range: { min: 0, max: 51200 }, pricePerGB: 0.0081 },
+          { range: { min: 51200, max: 512000 }, pricePerGB: 0.0081 },
+          { range: { min: 512000, max: null }, pricePerGB: 0.0081 },
         ],
-        writeOperations: 0.522,
-        readOperations: 0.16,
+        writeOperations: 0.468,
+        readOperations: 0.13,
         iterativeReadOperations: 0.0052,
         iterativeWriteOperations: 0.13,
         otherOperations: 0.005,
-        dataRetrieval: 0.0369,
+        dataRetrieval: 0.03,
         dataWrite: 0,
+        minimumStorageDurationDays: 90,
+        earlyDeletionPenalty: 0.0081, // Same as storage price per GB
       },
       archive: {
         storage: [
-          { range: { min: 0, max: null }, pricePerGB: 0.004 },
+          { range: { min: 0, max: 51200 }, pricePerGB: 0.00299 },
+          { range: { min: 51200, max: 512000 }, pricePerGB: 0.00299 },
+          { range: { min: 512000, max: null }, pricePerGB: 0.00299 },
         ],
-        writeOperations: 0.26,
+        writeOperations: 0.273,
         readOperations: 6.50,
-        archiveHighPriorityRead: 79.95,
+        archiveHighPriorityRead: 65.00,
         iterativeReadOperations: 0.0052,
-        iterativeWriteOperations: 0.13,
+        iterativeWriteOperations: 0.065,
         otherOperations: 0.005,
         dataRetrieval: 0.02,
-        archiveHighPriorityRetrieval: 0.123,
+        archiveHighPriorityRetrieval: 0.10,
         dataWrite: 0,
+        minimumStorageDurationDays: 180,
+        earlyDeletionPenalty: 0.00299, // Same as storage price per GB
       },
     },
     reservedCapacity: {
-      '100TB': 3090,
-      '1PB': 30099,
+      '100TB': 3846,
+      '1PB': 37460,
     },
   },
 };

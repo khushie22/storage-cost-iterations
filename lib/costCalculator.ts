@@ -11,27 +11,41 @@ export interface TierAllocation {
   archive: number; // in GB
 }
 
-export interface TransactionInputs {
-  monthlyReadGB: number;
-  monthlyWriteGB: number;
-  readOperations: number; // per 10,000
-  writeOperations: number; // per 10,000
+// Tier-specific transaction inputs for Azure
+export interface TierTransactionInputs {
+  readOperations?: number; // per 10,000
+  writeOperations?: number; // per 10,000
   queryAccelerationScannedGB?: number;
   queryAccelerationReturnedGB?: number;
-  archiveHighPriorityRead?: number; // per 10,000
-  archiveHighPriorityRetrievalGB?: number;
+  archiveHighPriorityRead?: number; // per 10,000 (archive only)
+  archiveHighPriorityRetrievalGB?: number; // archive only
+  dataRetrievalGB?: number; // cold tier only
   iterativeReadOperations?: number; // per 10,000
   iterativeWriteOperations?: number; // per 100
   otherOperations?: number; // per 10,000
+  storageDurationDays?: number; // for early deletion calculation (cold and archive tiers)
+}
+
+export interface TransactionInputs {
+  hot: TierTransactionInputs;
+  cold: TierTransactionInputs;
+  archive: TierTransactionInputs;
+}
+
+// Tier-specific transaction inputs for AWS
+export interface AWSTierTransactionInputs {
+  putCopyPostListRequests?: number; // per 1,000
+  getSelectRequests?: number; // per 1,000
+  dataRetrievalGB?: number; // per GB (cold and archive only)
+  dataRetrievalRequests?: number; // per 1,000 (Glacier only)
+  retrievalType?: 'standard' | 'expedited'; // for Glacier
+  storageDurationDays?: number; // for early deletion calculation
 }
 
 export interface AWSTransactionInputs {
-  putCopyPostListRequests: number; // per 1,000
-  getSelectRequests: number; // per 1,000
-  dataRetrievalGB?: number; // per GB
-  dataRetrievalRequests?: number; // per 1,000 (for Glacier)
-  retrievalType?: 'standard' | 'expedited'; // for Glacier
-  storageDurationDays?: number; // for early deletion calculation
+  hot: AWSTierTransactionInputs;
+  cold: AWSTierTransactionInputs;
+  archive: AWSTierTransactionInputs;
 }
 
 export interface DatabaseConfig {
@@ -104,39 +118,39 @@ function calculateStorageCost(
  */
 function calculateTransactionCosts(
   tier: StorageTier,
-  transactions: TransactionInputs,
+  tierTransactions: TierTransactionInputs,
   pricing: any
 ): number {
   let cost = 0;
 
   // Write operations (per 10,000)
-  if (transactions.writeOperations > 0 && pricing.writeOperations) {
-    cost += (transactions.writeOperations / 10000) * pricing.writeOperations;
+  if (tierTransactions.writeOperations && tierTransactions.writeOperations > 0 && pricing.writeOperations) {
+    cost += (tierTransactions.writeOperations / 10000) * pricing.writeOperations;
   }
 
   // Read operations (per 10,000)
-  if (transactions.readOperations > 0 && pricing.readOperations) {
-    cost += (transactions.readOperations / 10000) * pricing.readOperations;
+  if (tierTransactions.readOperations && tierTransactions.readOperations > 0 && pricing.readOperations) {
+    cost += (tierTransactions.readOperations / 10000) * pricing.readOperations;
   }
 
   // Iterative read operations
-  if (transactions.iterativeReadOperations && pricing.iterativeReadOperations) {
-    cost += (transactions.iterativeReadOperations / 10000) * pricing.iterativeReadOperations;
+  if (tierTransactions.iterativeReadOperations && tierTransactions.iterativeReadOperations > 0 && pricing.iterativeReadOperations) {
+    cost += (tierTransactions.iterativeReadOperations / 10000) * pricing.iterativeReadOperations;
   }
 
   // Iterative write operations (per 100)
-  if (transactions.iterativeWriteOperations && pricing.iterativeWriteOperations) {
-    cost += (transactions.iterativeWriteOperations / 100) * pricing.iterativeWriteOperations;
+  if (tierTransactions.iterativeWriteOperations && tierTransactions.iterativeWriteOperations > 0 && pricing.iterativeWriteOperations) {
+    cost += (tierTransactions.iterativeWriteOperations / 100) * pricing.iterativeWriteOperations;
   }
 
   // Other operations
-  if (transactions.otherOperations && pricing.otherOperations) {
-    cost += (transactions.otherOperations / 10000) * pricing.otherOperations;
+  if (tierTransactions.otherOperations && tierTransactions.otherOperations > 0 && pricing.otherOperations) {
+    cost += (tierTransactions.otherOperations / 10000) * pricing.otherOperations;
   }
 
   // Archive high priority read
-  if (tier === 'archive' && transactions.archiveHighPriorityRead && pricing.archiveHighPriorityRead) {
-    cost += (transactions.archiveHighPriorityRead / 10000) * pricing.archiveHighPriorityRead;
+  if (tier === 'archive' && tierTransactions.archiveHighPriorityRead && tierTransactions.archiveHighPriorityRead > 0 && pricing.archiveHighPriorityRead) {
+    cost += (tierTransactions.archiveHighPriorityRead / 10000) * pricing.archiveHighPriorityRead;
   }
 
   return cost;
@@ -147,7 +161,7 @@ function calculateTransactionCosts(
  */
 function calculateRetrievalCosts(
   tier: StorageTier,
-  transactions: TransactionInputs,
+  tierTransactions: TierTransactionInputs,
   pricing: any
 ): number {
   let cost = 0;
@@ -155,16 +169,19 @@ function calculateRetrievalCosts(
   // Data retrieval (per GB)
   if (tier === 'cold' || tier === 'archive') {
     const retrievalGB = tier === 'archive' 
-      ? (transactions.archiveHighPriorityRetrievalGB || 0)
-      : transactions.monthlyReadGB;
+      ? (tierTransactions.archiveHighPriorityRetrievalGB || tierTransactions.dataRetrievalGB || 0)
+      : (tierTransactions.dataRetrievalGB || 0);
 
     if (retrievalGB > 0) {
-      if (tier === 'archive' && transactions.archiveHighPriorityRetrievalGB && pricing.archiveHighPriorityRetrieval) {
+      if (tier === 'archive' && tierTransactions.archiveHighPriorityRetrievalGB && pricing.archiveHighPriorityRetrieval) {
         // High priority retrieval
-        cost += retrievalGB * pricing.archiveHighPriorityRetrieval;
-      } else if (pricing.dataRetrieval) {
-        // Standard retrieval
-        cost += retrievalGB * pricing.dataRetrieval;
+        cost += tierTransactions.archiveHighPriorityRetrievalGB * pricing.archiveHighPriorityRetrieval;
+      } else if (tier === 'archive' && tierTransactions.dataRetrievalGB && pricing.dataRetrieval) {
+        // Standard archive retrieval
+        cost += tierTransactions.dataRetrievalGB * pricing.dataRetrieval;
+      } else if (tier === 'cold' && tierTransactions.dataRetrievalGB && pricing.dataRetrieval) {
+        // Cold tier retrieval
+        cost += tierTransactions.dataRetrievalGB * pricing.dataRetrieval;
       }
     }
   }
@@ -176,17 +193,17 @@ function calculateRetrievalCosts(
  * Calculate query acceleration costs
  */
 function calculateQueryAccelerationCosts(
-  transactions: TransactionInputs,
+  tierTransactions: TierTransactionInputs,
   pricing: any
 ): number {
   let cost = 0;
 
-  if (transactions.queryAccelerationScannedGB && pricing.queryAccelerationScanned) {
-    cost += transactions.queryAccelerationScannedGB * pricing.queryAccelerationScanned;
+  if (tierTransactions.queryAccelerationScannedGB && tierTransactions.queryAccelerationScannedGB > 0 && pricing.queryAccelerationScanned) {
+    cost += tierTransactions.queryAccelerationScannedGB * pricing.queryAccelerationScanned;
   }
 
-  if (transactions.queryAccelerationReturnedGB && pricing.queryAccelerationReturned) {
-    cost += transactions.queryAccelerationReturnedGB * pricing.queryAccelerationReturned;
+  if (tierTransactions.queryAccelerationReturnedGB && tierTransactions.queryAccelerationReturnedGB > 0 && pricing.queryAccelerationReturned) {
+    cost += tierTransactions.queryAccelerationReturnedGB * pricing.queryAccelerationReturned;
   }
 
   return cost;
@@ -226,22 +243,23 @@ export function calculateDatabaseCosts(
     const sizeTB = database.tierAllocation[tier];
     const sizeGB = sizeTB * 1024; // Convert TB to GB
     const tierPricing = config.tiers[tier];
+    const tierTransactions = database.transactions[tier];
 
     // Storage cost
     const storageCost = calculateStorageCost(sizeGB, tierPricing.storage);
     breakdown[tier].storage = storageCost;
 
     // Transaction costs
-    const transactionCost = calculateTransactionCosts(tier, database.transactions, tierPricing);
+    const transactionCost = calculateTransactionCosts(tier, tierTransactions, tierPricing);
     breakdown[tier].transactions = transactionCost;
 
     // Retrieval costs
-    const retrievalCost = calculateRetrievalCosts(tier, database.transactions, tierPricing);
+    const retrievalCost = calculateRetrievalCosts(tier, tierTransactions, tierPricing);
     breakdown[tier].retrieval = retrievalCost;
 
     // Query acceleration (only for hot/cold)
     if (tier !== 'archive') {
-      const queryCost = calculateQueryAccelerationCosts(database.transactions, tierPricing);
+      const queryCost = calculateQueryAccelerationCosts(tierTransactions, tierPricing);
       breakdown[tier].queryAcceleration = queryCost;
     }
 
@@ -451,7 +469,7 @@ export interface IncrementalCostBreakdown {
   queryAcceleration: number;
   total: number;
   requests?: number; // For AWS
-  earlyDeletion?: number; // For AWS
+  earlyDeletion?: number; // For AWS and Azure
 }
 
 /**
@@ -470,32 +488,45 @@ export function calculateIncrementalCosts(
   let totalTransactions = 0;
   let totalRetrieval = 0;
   let totalQueryAcceleration = 0;
+  let totalEarlyDeletion = 0;
 
   for (const tier of tiers) {
     const tierPricing = config.tiers[tier];
+    const tierTransactions = transactions[tier];
 
     // Transaction costs
-    const transactionCost = calculateTransactionCosts(tier, transactions, tierPricing);
+    const transactionCost = calculateTransactionCosts(tier, tierTransactions, tierPricing);
     totalTransactions += transactionCost;
 
     // Retrieval costs
-    const retrievalCost = calculateRetrievalCosts(tier, transactions, tierPricing);
+    const retrievalCost = calculateRetrievalCosts(tier, tierTransactions, tierPricing);
     totalRetrieval += retrievalCost;
 
     // Query acceleration (only for hot/cold)
     if (tier !== 'archive') {
-      const queryCost = calculateQueryAccelerationCosts(transactions, tierPricing);
+      const queryCost = calculateQueryAccelerationCosts(tierTransactions, tierPricing);
       totalQueryAcceleration += queryCost;
+    }
+
+    // Early deletion penalty (for cold and archive tiers)
+    if ((tier === 'cold' || tier === 'archive') && tierPricing.minimumStorageDurationDays && tierTransactions.storageDurationDays) {
+      const sizeGB = tierAllocation[tier];
+      const remainingDays = tierPricing.minimumStorageDurationDays - tierTransactions.storageDurationDays;
+      if (remainingDays > 0 && tierPricing.earlyDeletionPenalty) {
+        // Prorated early deletion fee: sizeGB × earlyDeletionPenalty × (remainingDays / minimumStorageDurationDays)
+        totalEarlyDeletion += sizeGB * tierPricing.earlyDeletionPenalty * (remainingDays / tierPricing.minimumStorageDurationDays);
+      }
     }
   }
 
   // Multiply by number of databases
-  const total = (totalTransactions + totalRetrieval + totalQueryAcceleration) * numberOfDatabases;
+  const total = (totalTransactions + totalRetrieval + totalQueryAcceleration + totalEarlyDeletion) * numberOfDatabases;
 
   return {
     transactions: totalTransactions * numberOfDatabases,
     retrieval: totalRetrieval * numberOfDatabases,
     queryAcceleration: totalQueryAcceleration * numberOfDatabases,
+    earlyDeletion: totalEarlyDeletion * numberOfDatabases,
     total,
   };
 }
@@ -518,35 +549,39 @@ export function calculateAWSIncrementalCosts(
   for (const tier of tiers) {
     const tierPricing = config.tiers[tier];
     const sizeGB = tierAllocation[tier];
+    const tierTransactions = awsTransactions[tier];
 
     // Request costs (PUT/COPY/POST/LIST + GET/SELECT)
-    const putRequests = (awsTransactions.putCopyPostListRequests / 1000) * tierPricing.putCopyPostListRequests;
-    const getRequests = (awsTransactions.getSelectRequests / 1000) * tierPricing.getSelectRequests;
-    totalRequests += putRequests + getRequests;
+    if (tierTransactions.putCopyPostListRequests && tierTransactions.putCopyPostListRequests > 0) {
+      totalRequests += (tierTransactions.putCopyPostListRequests / 1000) * tierPricing.putCopyPostListRequests;
+    }
+    if (tierTransactions.getSelectRequests && tierTransactions.getSelectRequests > 0) {
+      totalRequests += (tierTransactions.getSelectRequests / 1000) * tierPricing.getSelectRequests;
+    }
 
     // Retrieval costs
-    if (awsTransactions.dataRetrievalGB && awsTransactions.dataRetrievalGB > 0) {
+    if (tierTransactions.dataRetrievalGB && tierTransactions.dataRetrievalGB > 0) {
       if (tier === 'cold' && tierPricing.dataRetrieval?.standard) {
-        totalRetrieval += awsTransactions.dataRetrievalGB * tierPricing.dataRetrieval.standard;
+        totalRetrieval += tierTransactions.dataRetrievalGB * tierPricing.dataRetrieval.standard;
       } else if (tier === 'archive' && tierPricing.dataRetrieval) {
-        const retrievalType = awsTransactions.retrievalType || 'standard';
+        const retrievalType = tierTransactions.retrievalType || 'standard';
         const retrievalPrice = tierPricing.dataRetrieval[retrievalType];
         if (retrievalPrice) {
-          totalRetrieval += awsTransactions.dataRetrievalGB * retrievalPrice;
+          totalRetrieval += tierTransactions.dataRetrievalGB * retrievalPrice;
         }
         // Add retrieval request cost for Glacier
-        if (awsTransactions.dataRetrievalRequests && tierPricing.dataRetrievalRequests) {
+        if (tierTransactions.dataRetrievalRequests && tierPricing.dataRetrievalRequests) {
           const requestPrice = tierPricing.dataRetrievalRequests[retrievalType];
           if (requestPrice) {
-            totalRetrieval += (awsTransactions.dataRetrievalRequests / 1000) * requestPrice;
+            totalRetrieval += (tierTransactions.dataRetrievalRequests / 1000) * requestPrice;
           }
         }
       }
     }
 
     // Early deletion penalty
-    if (tierPricing.minimumStorageDurationDays && awsTransactions.storageDurationDays) {
-      const remainingDays = tierPricing.minimumStorageDurationDays - awsTransactions.storageDurationDays;
+    if (tierPricing.minimumStorageDurationDays && tierTransactions.storageDurationDays) {
+      const remainingDays = tierPricing.minimumStorageDurationDays - tierTransactions.storageDurationDays;
       if (remainingDays > 0 && tierPricing.earlyDeletionPenalty) {
         totalEarlyDeletion += sizeGB * tierPricing.earlyDeletionPenalty * (remainingDays / tierPricing.minimumStorageDurationDays);
       }

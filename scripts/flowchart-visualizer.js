@@ -19,25 +19,51 @@ const mockInputs = {
   },
   numberOfDatabases: 5,
   azureTransactions: {
-    monthlyReadGB: 100,
-    monthlyWriteGB: 50,
-    readOperations: 50000,        // per 10,000
-    writeOperations: 30000,       // per 10,000
-    queryAccelerationScannedGB: 200,
-    queryAccelerationReturnedGB: 50,
-    archiveHighPriorityRead: 1000, // per 10,000
-    archiveHighPriorityRetrievalGB: 20,
-    iterativeReadOperations: 5000, // per 10,000
-    iterativeWriteOperations: 200, // per 100
-    otherOperations: 10000         // per 10,000
+    hot: {
+      readOperations: 30000,        // per 10,000
+      writeOperations: 20000,       // per 10,000
+      queryAccelerationScannedGB: 150,
+      queryAccelerationReturnedGB: 40,
+      iterativeReadOperations: 3000, // per 10,000
+      iterativeWriteOperations: 100, // per 100
+      otherOperations: 8000         // per 10,000
+    },
+    cold: {
+      readOperations: 15000,        // per 10,000
+      writeOperations: 8000,        // per 10,000
+      queryAccelerationScannedGB: 50,
+      queryAccelerationReturnedGB: 10,
+      dataRetrievalGB: 100,         // GB for cold tier retrieval
+      iterativeWriteOperations: 80  // per 100
+    },
+    archive: {
+      readOperations: 5000,         // per 10,000
+      writeOperations: 2000,        // per 10,000
+      archiveHighPriorityRead: 1000, // per 10,000
+      archiveHighPriorityRetrievalGB: 20,
+      dataRetrievalGB: 10,          // GB for standard archive retrieval
+      iterativeWriteOperations: 20  // per 100
+    }
   },
   awsTransactions: {
-    putCopyPostListRequests: 50000,  // per 1,000
-    getSelectRequests: 100000,       // per 1,000
-    dataRetrievalGB: 50,
-    dataRetrievalRequests: 1000,     // per 1,000
-    retrievalType: 'standard',       // 'standard' or 'expedited'
-    storageDurationDays: 60           // for early deletion
+    hot: {
+      putCopyPostListRequests: 30000,  // per 1,000
+      getSelectRequests: 60000         // per 1,000
+    },
+    cold: {
+      putCopyPostListRequests: 15000,  // per 1,000
+      getSelectRequests: 30000,        // per 1,000
+      dataRetrievalGB: 30,
+      storageDurationDays: 60           // for early deletion
+    },
+    archive: {
+      putCopyPostListRequests: 5000,   // per 1,000
+      getSelectRequests: 10000,        // per 1,000
+      dataRetrievalGB: 20,
+      dataRetrievalRequests: 1000,     // per 1,000
+      retrievalType: 'standard',       // 'standard' or 'expedited'
+      storageDurationDays: 60           // for early deletion
+    }
   }
 };
 
@@ -94,7 +120,7 @@ function simulateAzureIncrementalCosts(tracker, transactions, tier, tierPricing)
   // Transaction costs
   tracker.log(`Check Transaction Parameters for ${tier} tier`);
   
-  if (transactions.writeOperations > 0 && tierPricing.writeOperations) {
+  if (transactions.writeOperations && transactions.writeOperations > 0 && tierPricing.writeOperations) {
     const cost = (transactions.writeOperations / 10000) * tierPricing.writeOperations;
     transactionCost += cost;
     tracker.log(`✓ Write Operations: ${transactions.writeOperations} → $${cost.toFixed(4)}`, {
@@ -102,7 +128,7 @@ function simulateAzureIncrementalCosts(tracker, transactions, tier, tierPricing)
     });
   }
 
-  if (transactions.readOperations > 0 && tierPricing.readOperations) {
+  if (transactions.readOperations && transactions.readOperations > 0 && tierPricing.readOperations) {
     const cost = (transactions.readOperations / 10000) * tierPricing.readOperations;
     transactionCost += cost;
     tracker.log(`✓ Read Operations: ${transactions.readOperations} → $${cost.toFixed(4)}`, {
@@ -110,13 +136,13 @@ function simulateAzureIncrementalCosts(tracker, transactions, tier, tierPricing)
     });
   }
 
-  if (transactions.iterativeReadOperations && tierPricing.iterativeReadOperations) {
+  if (transactions.iterativeReadOperations && transactions.iterativeReadOperations > 0 && tierPricing.iterativeReadOperations) {
     const cost = (transactions.iterativeReadOperations / 10000) * tierPricing.iterativeReadOperations;
     transactionCost += cost;
     tracker.log(`✓ Iterative Read: ${transactions.iterativeReadOperations} → $${cost.toFixed(4)}`);
   }
 
-  if (transactions.iterativeWriteOperations && tierPricing.iterativeWriteOperations) {
+  if (transactions.iterativeWriteOperations && transactions.iterativeWriteOperations > 0 && tierPricing.iterativeWriteOperations) {
     const cost = (transactions.iterativeWriteOperations / 100) * tierPricing.iterativeWriteOperations;
     transactionCost += cost;
     tracker.log(`✓ Iterative Write: ${transactions.iterativeWriteOperations} → $${cost.toFixed(4)}`, {
@@ -124,13 +150,13 @@ function simulateAzureIncrementalCosts(tracker, transactions, tier, tierPricing)
     });
   }
 
-  if (transactions.otherOperations && tierPricing.otherOperations) {
+  if (transactions.otherOperations && transactions.otherOperations > 0 && tierPricing.otherOperations) {
     const cost = (transactions.otherOperations / 10000) * tierPricing.otherOperations;
     transactionCost += cost;
     tracker.log(`✓ Other Operations: ${transactions.otherOperations} → $${cost.toFixed(4)}`);
   }
 
-  if (tier === 'archive' && transactions.archiveHighPriorityRead && tierPricing.archiveHighPriorityRead) {
+  if (tier === 'archive' && transactions.archiveHighPriorityRead && transactions.archiveHighPriorityRead > 0 && tierPricing.archiveHighPriorityRead) {
     const cost = (transactions.archiveHighPriorityRead / 10000) * tierPricing.archiveHighPriorityRead;
     transactionCost += cost;
     tracker.log(`✓ Archive High Priority Read: ${transactions.archiveHighPriorityRead} → $${cost.toFixed(4)}`);
@@ -140,18 +166,18 @@ function simulateAzureIncrementalCosts(tracker, transactions, tier, tierPricing)
   if (tier === 'cold' || tier === 'archive') {
     tracker.log(`Calculate Retrieval Costs for ${tier} tier`);
     
-    if (tier === 'cold' && transactions.monthlyReadGB > 0 && tierPricing.dataRetrieval) {
-      retrievalCost = transactions.monthlyReadGB * tierPricing.dataRetrieval;
-      tracker.log(`✓ Cold Retrieval: ${transactions.monthlyReadGB} GB → $${retrievalCost.toFixed(4)}`);
+    if (tier === 'cold' && transactions.dataRetrievalGB && transactions.dataRetrievalGB > 0 && tierPricing.dataRetrieval) {
+      retrievalCost = transactions.dataRetrievalGB * tierPricing.dataRetrieval;
+      tracker.log(`✓ Cold Retrieval: ${transactions.dataRetrievalGB} GB → $${retrievalCost.toFixed(4)}`);
     }
     
-    if (tier === 'archive' && transactions.archiveHighPriorityRetrievalGB > 0) {
-      if (tierPricing.archiveHighPriorityRetrieval) {
+    if (tier === 'archive') {
+      if (transactions.archiveHighPriorityRetrievalGB && transactions.archiveHighPriorityRetrievalGB > 0 && tierPricing.archiveHighPriorityRetrieval) {
         retrievalCost = transactions.archiveHighPriorityRetrievalGB * tierPricing.archiveHighPriorityRetrieval;
         tracker.log(`✓ Archive High Priority Retrieval: ${transactions.archiveHighPriorityRetrievalGB} GB → $${retrievalCost.toFixed(4)}`);
-      } else if (tierPricing.dataRetrieval) {
-        retrievalCost = transactions.archiveHighPriorityRetrievalGB * tierPricing.dataRetrieval;
-        tracker.log(`✓ Archive Standard Retrieval: ${transactions.archiveHighPriorityRetrievalGB} GB → $${retrievalCost.toFixed(4)}`);
+      } else if (transactions.dataRetrievalGB && transactions.dataRetrievalGB > 0 && tierPricing.dataRetrieval) {
+        retrievalCost = transactions.dataRetrievalGB * tierPricing.dataRetrieval;
+        tracker.log(`✓ Archive Standard Retrieval: ${transactions.dataRetrievalGB} GB → $${retrievalCost.toFixed(4)}`);
       }
     }
   }
@@ -160,13 +186,13 @@ function simulateAzureIncrementalCosts(tracker, transactions, tier, tierPricing)
   if (tier === 'hot' || tier === 'cold') {
     tracker.log(`Calculate Query Acceleration for ${tier} tier`);
     
-    if (transactions.queryAccelerationScannedGB && tierPricing.queryAccelerationScanned) {
+    if (transactions.queryAccelerationScannedGB && transactions.queryAccelerationScannedGB > 0 && tierPricing.queryAccelerationScanned) {
       const scannedCost = transactions.queryAccelerationScannedGB * tierPricing.queryAccelerationScanned;
       queryCost += scannedCost;
       tracker.log(`✓ Query Scanned: ${transactions.queryAccelerationScannedGB} GB → $${scannedCost.toFixed(4)}`);
     }
     
-    if (transactions.queryAccelerationReturnedGB && tierPricing.queryAccelerationReturned) {
+    if (transactions.queryAccelerationReturnedGB && transactions.queryAccelerationReturnedGB > 0 && tierPricing.queryAccelerationReturned) {
       const returnedCost = transactions.queryAccelerationReturnedGB * tierPricing.queryAccelerationReturned;
       queryCost += returnedCost;
       tracker.log(`✓ Query Returned: ${transactions.queryAccelerationReturnedGB} GB → $${returnedCost.toFixed(4)}`);
@@ -199,20 +225,20 @@ function simulateAWSIncrementalCosts(tracker, awsTransactions, tier, tierPricing
   // Request costs
   tracker.log(`Calculate Request Costs for ${tier} tier`);
   
-  if (awsTransactions.putCopyPostListRequests && tierPricing.putCopyPostListRequests) {
+  if (awsTransactions.putCopyPostListRequests && awsTransactions.putCopyPostListRequests > 0 && tierPricing.putCopyPostListRequests) {
     const cost = (awsTransactions.putCopyPostListRequests / 1000) * tierPricing.putCopyPostListRequests;
     requestCost += cost;
     tracker.log(`✓ PUT/COPY/POST/LIST: ${awsTransactions.putCopyPostListRequests} → $${cost.toFixed(4)}`);
   }
 
-  if (awsTransactions.getSelectRequests && tierPricing.getSelectRequests) {
+  if (awsTransactions.getSelectRequests && awsTransactions.getSelectRequests > 0 && tierPricing.getSelectRequests) {
     const cost = (awsTransactions.getSelectRequests / 1000) * tierPricing.getSelectRequests;
     requestCost += cost;
     tracker.log(`✓ GET/SELECT: ${awsTransactions.getSelectRequests} → $${cost.toFixed(4)}`);
   }
 
   // Retrieval costs
-  if ((tier === 'cold' || tier === 'archive') && awsTransactions.dataRetrievalGB > 0) {
+  if ((tier === 'cold' || tier === 'archive') && awsTransactions.dataRetrievalGB && awsTransactions.dataRetrievalGB > 0) {
     tracker.log(`Calculate Retrieval Costs for ${tier} tier`);
     
     if (tier === 'cold' && tierPricing.dataRetrieval?.standard) {
@@ -230,7 +256,7 @@ function simulateAWSIncrementalCosts(tracker, awsTransactions, tier, tierPricing
         tracker.log(`✓ Archive ${retrievalType} Retrieval GB: ${awsTransactions.dataRetrievalGB} GB → $${gbCost.toFixed(4)}`);
         
         // Request cost for archive
-        if (awsTransactions.dataRetrievalRequests && tierPricing.dataRetrievalRequests) {
+        if (awsTransactions.dataRetrievalRequests && awsTransactions.dataRetrievalRequests > 0 && tierPricing.dataRetrievalRequests) {
           const reqPrice = tierPricing.dataRetrievalRequests[retrievalType];
           if (reqPrice) {
             const reqCost = (awsTransactions.dataRetrievalRequests / 1000) * reqPrice;
@@ -293,17 +319,18 @@ function simulateCalculationFlow() {
       
       tiers.forEach(tier => {
         const sizeGB = mockInputs.tierAllocation[tier];
+        const tierTransactions = mockInputs.awsTransactions[tier];
         // Mock pricing - in real app this comes from pricing.ts
         const mockPricing = {
           putCopyPostListRequests: 0.005,
           getSelectRequests: 0.0004,
-          dataRetrieval: tier === 'cold' ? { standard: 0.01 } : { standard: 0.01, expedited: 0.03 },
+          dataRetrieval: tier === 'cold' ? { standard: 0.01 } : tier === 'archive' ? { standard: 0.01, expedited: 0.03 } : undefined,
           dataRetrievalRequests: tier === 'archive' ? { standard: 0.05, expedited: 10.00 } : undefined,
           minimumStorageDurationDays: tier === 'cold' ? 30 : tier === 'archive' ? 90 : undefined,
           earlyDeletionPenalty: tier === 'cold' ? 0.0125 : tier === 'archive' ? 0.0036 : undefined
         };
         
-        const tierCosts = simulateAWSIncrementalCosts(tracker, mockInputs.awsTransactions, tier, mockPricing, sizeGB);
+        const tierCosts = simulateAWSIncrementalCosts(tracker, tierTransactions, tier, mockPricing, sizeGB);
         totalIncremental += tierCosts.total;
       });
       
@@ -325,6 +352,7 @@ function simulateCalculationFlow() {
       let totalIncremental = 0;
       
       tiers.forEach(tier => {
+        const tierTransactions = mockInputs.azureTransactions[tier];
         // Mock pricing - in real app this comes from pricing.ts
         const mockPricing = {
           writeOperations: 0.065,
@@ -339,7 +367,7 @@ function simulateCalculationFlow() {
           queryAccelerationReturned: (tier === 'hot' || tier === 'cold') ? 0.00080 : undefined
         };
         
-        const tierCosts = simulateAzureIncrementalCosts(tracker, mockInputs.azureTransactions, tier, mockPricing);
+        const tierCosts = simulateAzureIncrementalCosts(tracker, tierTransactions, tier, mockPricing);
         totalIncremental += tierCosts.total;
       });
       

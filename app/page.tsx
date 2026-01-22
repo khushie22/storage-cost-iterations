@@ -33,14 +33,14 @@ export default function Home() {
   // Additional Cost Parameters
   const [activeProvider, setActiveProvider] = useState<'azure' | 'aws'>('azure');
   const [transactions, setTransactions] = useState<TransactionInputs>({
-    monthlyReadGB: 0,
-    monthlyWriteGB: 0,
-    readOperations: 0,
-    writeOperations: 0,
+    hot: {},
+    cold: {},
+    archive: {},
   });
   const [awsTransactions, setAWSTransactions] = useState<AWSTransactionInputs>({
-    putCopyPostListRequests: 0,
-    getSelectRequests: 0,
+    hot: {},
+    cold: {},
+    archive: {},
   });
 
   // Display options
@@ -63,7 +63,9 @@ export default function Home() {
     const costsMap = new Map<string, any>();
 
     // Azure incremental costs
-    const hasAnyAzureTransactions = Object.values(transactions).some(v => v && v > 0);
+    const hasAnyAzureTransactions = Object.values(transactions).some(tier => 
+      tier && Object.values(tier).some(v => v && typeof v === 'number' && v > 0)
+    );
     if (hasAnyAzureTransactions) {
       const storageTypes: StorageType[] = ['data-lake', 'blob'];
       const replicationTypes: ReplicationType[] = ['LRS', 'GRS'];
@@ -84,7 +86,9 @@ export default function Home() {
     }
 
     // AWS incremental costs
-    const hasAnyAWSTransactions = Object.values(awsTransactions).some(v => v && v > 0);
+    const hasAnyAWSTransactions = Object.values(awsTransactions).some(tier => 
+      tier && Object.values(tier).some(v => v && typeof v === 'number' && v > 0)
+    );
     if (hasAnyAWSTransactions) {
       const key = 'aws-s3';
       const costs = calculateAWSIncrementalCosts(

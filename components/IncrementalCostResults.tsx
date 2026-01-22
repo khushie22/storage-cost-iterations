@@ -68,7 +68,7 @@ export default function IncrementalCostResults({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className={`grid gap-4 ${costs.earlyDeletion && costs.earlyDeletion > 0 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3'}`}>
         <div className="bg-yellow-50 p-4 rounded-lg">
           <div className="text-sm text-gray-600 mb-1">Transactions</div>
           <div className="text-xl font-bold text-yellow-700">
@@ -87,6 +87,17 @@ export default function IncrementalCostResults({
             {formatCurrency(costs.queryAcceleration * multiplier)}
           </div>
         </div>
+        {costs.earlyDeletion && costs.earlyDeletion > 0 && (
+          <div className="bg-red-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600 mb-1">Early Deletion</div>
+            <div className="text-xl font-bold text-red-700">
+              {formatCurrency(costs.earlyDeletion * multiplier)}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              Prorated penalty for early deletion
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
